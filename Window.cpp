@@ -13,6 +13,15 @@ Window::Window(GLint windowWidth, GLint windowHeight)
 {
 	width = windowWidth;
 	height = windowHeight;
+	muevex = 2.0f;
+	muevexHelicoptero = 2.0f;
+	muevexPez = 0.0f;
+	mueveyPez = 0.0f;
+	Dirx = 0.0f;
+	Diry = 0.0f;
+	Dirz = 0.0f;
+
+
 	for (size_t i = 0; i < 1024; i++)
 	{
 		keys[i] = 0;
@@ -35,7 +44,7 @@ int Window::Initialise()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 	//CREAR VENTANA
-	mainWindow = glfwCreateWindow(width, height, "Practica 2: Proyecciones, transformaciones", NULL, NULL);
+	mainWindow = glfwCreateWindow(width, height, "Ejercicio 08 Iluminacion 2, Perez Leon Jesus Alexis", NULL, NULL);
 
 	if (!mainWindow)
 	{
@@ -76,7 +85,24 @@ int Window::Initialise()
 void Window::createCallbacks()
 {
 	glfwSetKeyCallback(mainWindow, ManejaTeclado);
+	glfwSetCursorPosCallback(mainWindow, ManejaMouse);
 }
+GLfloat Window::getXChange()
+{
+	GLfloat theChange = xChange;
+	xChange = 0.0f;
+	return theChange;
+}
+
+GLfloat Window::getYChange()
+{
+	GLfloat theChange = yChange;
+	yChange = 0.0f;
+	return theChange;
+}
+
+
+
 
 void Window::ManejaTeclado(GLFWwindow* window, int key, int code, int action, int mode)
 {
@@ -86,11 +112,93 @@ void Window::ManejaTeclado(GLFWwindow* window, int key, int code, int action, in
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
-
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+	if (key == GLFW_KEY_Y)
 	{
-		const char* key_name = glfwGetKeyName(GLFW_KEY_D, 0);
-		printf("se presiono la tecla: %s\n",key_name);
+		theWindow-> muevex += 1.0;
+		
+	}
+	if (key == GLFW_KEY_U)
+	{
+		theWindow-> muevex -= 1.0;
+	}
+	//mueve hacia atras el helicoptero y enciende la luz amarilla trasera
+	if (key == GLFW_KEY_H)
+	{
+		theWindow->muevexHelicoptero += 1.0;
+		theWindow->luzFrontHelicoptero = false;
+		theWindow->luzBackHelicoptero = true;
+	}
+	//mueve hacia adelante el helicoptero y enciende la luz amarilla frontal
+	if (key == GLFW_KEY_J)
+	{
+		theWindow->muevexHelicoptero -= 1.0;
+		theWindow->luzBackHelicoptero = false;
+		theWindow->luzFrontHelicoptero = true;
+	}
+
+	//tecla para prender y apagar la pointlight de la farola
+	if (key == GLFW_KEY_L && action == GLFW_PRESS)
+	{
+		theWindow->luzPrendida = !theWindow->luzPrendida;
+	}
+	//tecla para prender y apagar la pointlight del bulbo del pez
+	if (key == GLFW_KEY_K && action == GLFW_PRESS)
+	{
+		theWindow->bulboPrendido = !theWindow->bulboPrendido;
+	}
+
+	//tecla para cambiar de color la luz del faro del carro
+	if (key == GLFW_KEY_C && action == GLFW_PRESS)
+	{
+		// Cicla entre 0 y 5 (6 colores en total)
+		theWindow->colorIndex = (theWindow->colorIndex + 1) % 6;
+	}
+
+	//mueve en diagonal hacia arriba el pez
+	if (key == GLFW_KEY_R)
+	{
+		//printf("muevexPez: %f, mueveyPez: %f\n", theWindow->muevexPez, theWindow->mueveyPez);
+		if (theWindow->muevexPez < 4.0f && theWindow->mueveyPez < 2.0f) {
+			theWindow->muevexPez += 0.4;
+			theWindow->mueveyPez += 0.2;
+		}
+	}
+	//mueve en diagonal hacia abajo el pez
+	if (key == GLFW_KEY_F)
+	{
+		//printf("muevexPez: %f, mueveyPez: %f\n", theWindow->muevexPez, theWindow->mueveyPez);
+		if (theWindow->muevexPez > -4.0f && theWindow->mueveyPez > -2.0f){
+			theWindow->muevexPez -= 0.4;
+			theWindow->mueveyPez -= 0.2;
+		}
+	}
+
+	if (key == GLFW_KEY_LEFT)
+	{
+		//printf("Dirx: %f\n", theWindow->Dirx);
+		if (theWindow->Dirx >= 1.0f) {
+			theWindow->Dirx = -1.0f;
+		}
+
+		theWindow->Dirx += 0.1f;
+	}
+	if (key == GLFW_KEY_UP)
+	{
+		//printf("Diry: %f\n", theWindow->Diry);
+		if (theWindow->Diry >= 1.0f) {
+			theWindow->Diry = -1.0f;
+		}
+
+		theWindow->Diry += 0.1f;
+	}
+	if (key == GLFW_KEY_RIGHT)
+	{
+		//printf("Dirz: %f\n", theWindow->Dirz);
+		if (theWindow->Dirz >= 1.0f) {
+			theWindow->Dirz = -1.0f;
+		}
+
+		theWindow->Dirz += 0.1f;
 	}
 
 	if (key >= 0 && key < 1024)
@@ -98,15 +206,34 @@ void Window::ManejaTeclado(GLFWwindow* window, int key, int code, int action, in
 		if (action == GLFW_PRESS)
 		{
 			theWindow->keys[key] = true;
-			printf("se presiono la tecla %d'\n", key);
+			//printf("se presiono la tecla %d'\n", key);
 		}
 		else if (action == GLFW_RELEASE)
 		{
 			theWindow->keys[key] = false;
-			printf("se solto la tecla %d'\n", key);
+			//printf("se solto la tecla %d'\n", key);
 		}
 	}
 }
+
+void Window::ManejaMouse(GLFWwindow* window, double xPos, double yPos)
+{
+	Window* theWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+	if (theWindow->mouseFirstMoved)
+	{
+		theWindow->lastX = xPos;
+		theWindow->lastY = yPos;
+		theWindow->mouseFirstMoved = false;
+	}
+
+	theWindow->xChange = xPos - theWindow->lastX;
+	theWindow->yChange = theWindow->lastY - yPos;
+
+	theWindow->lastX = xPos;
+	theWindow->lastY = yPos;
+}
+
 
 Window::~Window()
 {
